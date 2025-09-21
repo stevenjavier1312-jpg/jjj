@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carta Flores Amarillas 🌼</title>
+<style>
+  :root{
+    --y-50:#fff7cc; --y-60:#ffef99; --y-70:#ffe066; --y-80:#ffd43b;
+    --ink-90:#2b2b2b; --ink-70:#5a5a5a; --paper:#fffef7;
+    --accent:#ff5e8a;
+    --radius-xl:24px; --radius-md:14px;
+    --shadow-lg:0 18px 60px rgba(0,0,0,.18);
+    --shadow-md:0 10px 30px rgba(0,0,0,.14);
+  }
+  html,body{height:100%}
+  body{
+    margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+    color:var(--ink-90);
+    background:
+      radial-gradient(1200px 800px at 70% 20%, rgba(255,255,255,.55), transparent 55%),
+      linear-gradient(180deg, var(--y-60), var(--y-50));
+    overflow:hidden;
+  }
+  /* Corazones de fondo */
+  canvas#bg{position:fixed; inset:0; pointer-events:none; opacity:.9}
+
+  /* Vistas */
+  .view{position:fixed; inset:0; display:none; place-items:center; padding:24px}
+  .view.shown{display:grid}
+
+  /* CARD (inicio) */
+  .card{
+    width:min(92vw, 720px);
+    background: rgba(255,255,255,.92);
+    border:1px solid rgba(0,0,0,.06);
+    border-radius:var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    padding: clamp(18px, 3vw, 28px);
+  }
+  .card h1{margin:.2rem 0 .6rem; font-size:clamp(22px,4vw,30px); color:#8a3d53; text-align:center}
+  .sub{margin:0 0 .6rem; color:var(--ink-70); text-align:center}
+  .hintbox{
+    background:#fff6cc; border:1px dashed #f4c43d; border-radius:14px;
+    padding:12px; margin:10px 0; color:#7a2c44; font-weight:600
+  }
+  .row{display:flex; gap:10px; margin:.6rem 0 .2rem; justify-content:center}
+  input[type="password"]{
+    flex:1; max-width:320px; padding:14px 16px; border-radius:var(--radius-md);
+    border:1px solid rgba(0,0,0,.12); background:#fffdf5; color:var(--ink-90); font-size:16px;
+  }
+  .btn{
+    border:0; padding:14px 18px; border-radius:var(--radius-md);
+    background:linear-gradient(135deg, var(--y-80), var(--y-70));
+    color:var(--ink-90); font-weight:800; cursor:pointer; box-shadow: var(--shadow-md);
+  }
+  .err{min-height:20px; color:#b00020; margin-top:10px; text-align:center}
+
+  /* Toolbar estilo “píldora” (inicio y carta) */
+  .toolbar{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:12px 0}
+  .pill{
+    border:1px solid rgba(0,0,0,.08); background:#fff6cc; color:#0f0f0f;
+    padding:10px 14px; border-radius:999px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:8px;
+  }
+
+  /* Carta */
+  .letter{
+    width:min(92vw, 980px);
+    max-height:82vh; overflow:auto;
+    background: var(--paper);
+    border:2px solid #f4c43d;
+    border-radius:var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    padding: clamp(18px, 3vw, 28px);
+  }
+  .title{font-size:clamp(24px, 4vw, 40px); margin:.1rem 0 .3rem; color:#7a2c44; text-align:center}
+  .subtitle{margin:0 0 1rem; color:#9a5a00; text-align:center}
+  .type{white-space:pre-wrap; line-height:1.75; font-size:clamp(16px,2.1vw,19px); color:var(--ink-90)}
+
+  /* Jardín */
+  .garden{
+    position:relative; margin: 10px auto; width:min(760px, 92%); min-height: 280px;
+    border-radius: 20px; background: linear-gradient(180deg,#fff9d9,#fffceb);
+    border: 1px solid rgba(0,0,0,.05); box-shadow: 0 8px 30px rgba(0,0,0,.08) inset;
+    overflow:hidden;
+  }
+  .hint{font-size:13px; text-align:center; color:#9a5a00; margin:6px 0 10px}
+
+  /* 10 razones */
+  .actions{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:12px}
+  .reason{border:1px solid rgba(0,0,0,.08); background:#fffbea; color:#7a2c44;
+    padding:8px 12px; border-radius:999px; font-weight:700; cursor:pointer; font-size:14px}
+
+  /* Modal bonito reutilizable */
+  .overlay{position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.35); z-index:50}
+  .overlay.show{display:grid}
+  .modal{background:#fffdf3; color:var(--ink-90); border-radius:16px; padding:18px 20px; width:min(92vw, 420px); box-shadow:var(--shadow-lg)}
+  .modal h3{margin:.2rem 0 .6rem; color:#7a2c44}
+  .modal p{margin:.2rem 0 1rem; line-height:1.6}
+  .modal .btn{background:linear-gradient(135deg, var(--accent), #ff7aa3); color:#fff}
+
+  @media (prefers-reduced-motion: reduce){ canvas#bg{display:none} }
+</style>
+</head>
+<body>
+  <canvas id="bg" aria-hidden="true"></canvas>
+
+  <!-- INICIO con pistas e interacción -->
+  <section id="gate" class="view shown" aria-label="Acceso">
+    <div id="gateCard" class="card" role="dialog" aria-modal="true" aria-labelledby="t-gate">
+      <h1 id="t-gate">💛 Ingresa el código secreto</h1>
+      <p class="sub">Este rincón es solo para nosotros. Si necesitas ayuda, toca las pistas o los botones de abajo.</p>
+
+      <div class="hintbox">
+        <div>🔐 <b>Pistas:</b> 6 dígitos — nuestra fecha especial
+      </div>
+
+      <form id="codeForm" class="row" autocomplete="off" novalidate>
+        <input id="pass" type="password" inputmode="numeric" maxlength="6" placeholder="******" aria-label="Código secreto" required>
+        <button class="btn" type="submit">Entrar</button>
+      </form>
+
+      <div id="err" class="err" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- CARTA -->
+  <main id="love" class="view" aria-live="polite">
+    <article class="letter">
+      <h2 class="title">Para Mi Princesa Nayely Ortiz</h2>
+      <p class="subtitle">Una flor virtual y mil razones de amor 🌼</p>
+
+      <div class="toolbar" aria-label="Acciones del jardín">
+        <button class="pill" id="btnBloom">🌼 Brota flor</button>
+        <button class="pill" id="btnBouquet">💐 Ramo x5</button>
+        <button class="pill" id="btnPetals">🌬️ Pétalos al viento</button>
+        <button class="pill" id="btnBurst">💖 Explosión de amor</button>
+      </div>
+
+      <div id="garden" class="garden" aria-label="Jardín">
+        <!-- se inyecta la flor por JS -->
+      </div>
+      <p class="hint">Tip: clic en el <b>centro</b> cambia estilo; clic en un <b>pétalo</b> muestra un mensaje; <b>doble clic</b> crea otra flor.</p>
+
+      <section id="message" class="type" style="margin-top:10px"></section>
+
+      <nav class="actions" aria-label="10 razones por las que te amo">
+        <button class="reason" data-i="0">1</button>
+        <button class="reason" data-i="1">2</button>
+        <button class="reason" data-i="2">3</button>
+        <button class="reason" data-i="3">4</button>
+        <button class="reason" data-i="4">5</button>
+        <button class="reason" data-i="5">6</button>
+        <button class="reason" data-i="6">7</button>
+        <button class="reason" data-i="7">8</button>
+        <button class="reason" data-i="8">9</button>
+        <button class="reason" data-i="9">10</button>
+      </nav>
+    </article>
+  </main>
+
+  <!-- MODAL reutilizable -->
+  <div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="m-title">
+    <div class="modal">
+      <h3 id="m-title">💛</h3>
+      <p id="m-text"></p>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button id="m-close" class="btn" type="button">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+  const CODE = "180322";
+  const $ = s => document.querySelector(s);
+
+  /* ======== Acceso + pistas con modal ======== */
+  const gate = $("#gate"), love=$("#love"), pass=$("#pass"), err=$("#err"), garden=$("#garden");
+  const overlay=$("#overlay"), mText=$("#m-text"), mTitle=$("#m-title"), mClose=$("#m-close");
+
+  // Mensajes bonitos para el INICIO (botones estilo captura)
+  const gateMsgs = {
+    b1: {title:"Brota flor 🌼", text:"Cada clic es una semilla de amor que florece por ti."},
+    b2: {title:"Ramo x5 💐", text:"Un ramo de razones: te elijo, te cuido, te admiro, te respeto y te amo."},
+    b3: {title:"Pétalos al viento 🌬️", text:"Que los pétalos lleven mis besos hasta ti, mi niña bonita."},
+    b4: {title:"Explosión de amor 💖", text:"Mi corazón estalla de alegría cuando pienso en nosotros."}
+  };
+  // abrir modal del inicio
+  document.querySelectorAll('[data-open]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const k=btn.getAttribute('data-open');
+      mTitle.textContent = gateMsgs[k].title;
+      mText.textContent  = gateMsgs[k].text;
+      overlay.classList.add('show');
+    });
+  });
+
+  mClose.addEventListener("click", ()=> overlay.classList.remove("show"));
+  overlay.addEventListener("click", e=>{ if(e.target===overlay) overlay.classList.remove("show"); });
+  addEventListener("keydown", e=>{ if(e.key==="Escape") overlay.classList.remove("show"); });
+
+  $("#codeForm").addEventListener("submit", (e)=>{
+    e.preventDefault();
+    const val=(pass.value||"").replace(/\s+/g,"");
+    if(val===CODE){
+      gate.classList.remove("shown"); love.classList.add("shown");
+      startTypewriter(); startCanvas(); createFlower({xRatio:.5,yRatio:.62,style:"sun",petals:16});
+    }else{
+      err.textContent="Código incorrecto. Tip: es nuestra fecha 180322 💛";
+    }
+  });
+
+  /* ======== Mensaje principal (tu texto) ======== */
+  const text = `En este día especial quiero regalarte esta flor virtual para que sepas lo mucho que te amo, y que lo hice con mucho amor, mi reina preciosa y hermosa; gracias por compartir estos 3 años y 6 meses, por darme tu cariño y tu amor, mi niña bonita.
+
+Hoy y siempre te mereces todo y, a pesar de que no sea una flor real, lo hice con mucho amor, mi vida.
+
+Disfruta esta carta de amor, para la niña más preciosa del Mundo.
+
+Att. J Armijos`;
+  function startTypewriter(){
+    const box=$("#message"); box.textContent="";
+    let i=0; const timer=setInterval(()=>{ box.textContent+=text[i++]||""; if(i>=text.length) clearInterval(timer); },18);
+  }
+
+  /* ======== 10 razones (modal) ======== */
+  const reasons=[
+    "Eres muy atenta 💕","Iluminas mis días 🌞","Me apoyas en todo 💪","Tu sonrisa alegra mi vida 😊",
+    "Haces especial cada momento ✨","Eres mi lugar seguro 🏡","Siempre crees en mí 🌟","Tu ternura me derrite 🥰",
+    "A tu lado el tiempo vuela ⏳","Eres única en el mundo 🌎"
+  ];
+  document.querySelectorAll(".reason").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      mTitle.textContent="Te amo porque…";
+      mText.textContent=reasons[+b.dataset.i]||reasons[0];
+      overlay.classList.add("show");
+    });
+  });
+
+  /* ======== Corazones en canvas ======== */
+  const c=$("#bg"), ctx=c.getContext("2d",{alpha:true});
+  let W=0,H=0,hearts=[],raf;
+  function resize(){ W=c.width=innerWidth; H=c.height=innerHeight; }
+  addEventListener("resize", resize, {passive:true}); resize();
+  function makeHeart(x,y,vx,vy,life,size){ return {x,y,vx,vy,life,size,rot:0,spin:(Math.random()*0.1-0.05)}; }
+  function drawHeart(h){ ctx.save(); ctx.translate(h.x,h.y); ctx.rotate(h.rot); ctx.scale(h.size,h.size);
+    ctx.beginPath(); ctx.moveTo(0,-10); ctx.bezierCurveTo(12,-22,28,-10,0,16); ctx.bezierCurveTo(-28,-10,-12,-22,0,-10);
+    const g=ctx.createLinearGradient(-16,-16,16,16); g.addColorStop(0,"#ffd9e6"); g.addColorStop(1,"#ff8fb3");
+    ctx.fillStyle=g; ctx.globalAlpha=.9; ctx.fill(); ctx.restore();
+  }
+  function tick(){
+    ctx.clearRect(0,0,W,H);
+    if(hearts.length<140 && Math.random()<0.5) hearts.push(makeHeart(Math.random()*W, H+20,(Math.random()*0.6-0.3),-(0.8+Math.random()*1.2),480+Math.random()*360,0.5+Math.random()*0.9));
+    hearts = hearts.filter(h=>{ h.life--; h.x+=h.vx; h.y+=h.vy; h.rot+=h.spin; drawHeart(h); return h.life>0 && h.y>-80 && h.x>-80 && h.x<W+80; });
+    raf=requestAnimationFrame(tick);
+  }
+  function startCanvas(){ cancelAnimationFrame(raf); hearts.length=0; for(let i=0;i<80;i++) hearts.push(makeHeart(Math.random()*W,Math.random()*H,(Math.random()*0.8-0.4),(Math.random()*-1.0),300+Math.random()*360,0.4+Math.random()*1.0)); tick(); }
+  function heartsBurst(){ for(let i=0;i<120;i++){ hearts.push(makeHeart(W/2,H/2,Math.cos(i/120*2*Math.PI)*(2+Math.random()*2.8),Math.sin(i/120*2*Math.PI)*(2+Math.random()*2.8),220+Math.random()*180,.7+Math.random()*.6)); } }
+
+  /* ======== Jardín / Flor SVG ======== */
+  const sweetMessages=[
+    "Eres mi sol en días nublados ☀️","Tu risa es mi canción favorita 🎶","A tu lado todo florece 🌼","Tu mirada es mi hogar 🏡",
+    "Eres mi paz y mi aventura ✨","Me inspiras a ser mejor 🌟","Gracias por existir, amor 💛","Eres el milagro de mis días 🌈",
+    "Tus abrazos curan todo 🤗","Te elijo hoy y siempre ♾️"
+  ];
+
+  garden.addEventListener("dblclick",(e)=>{
+    const rect=garden.getBoundingClientRect();
+    createFlower({ xRatio:(e.clientX-rect.left)/rect.width, yRatio:(e.clientY-rect.top)/rect.height, petals:12+Math.floor(Math.random()*8), style:Math.random()<.5?"sun":"daisy" });
+  });
+
+  $("#btnBloom").addEventListener("click", ()=> createFlower({random:true}));
+  $("#btnBouquet").addEventListener("click", ()=> { for(let i=0;i<5;i++) setTimeout(()=>createFlower({random:true}), i*120); });
+  $("#btnPetals").addEventListener("click", ()=> petalsWind());
+  $("#btnBurst").addEventListener("click", ()=> { petalsBurst(); heartsBurst(); });
+
+  function createFlower(opts={}){
+    const rect=garden.getBoundingClientRect();
+    const xRatio = opts.random ? (0.15+Math.random()*0.7) : (opts.xRatio ?? 0.5);
+    const yRatio = opts.random ? (0.25+Math.random()*0.6) : (opts.yRatio ?? 0.6);
+    const petals = Math.max(8, Math.min(24, opts.petals || 16));
+    const style = opts.style || "sun";
+    const x = rect.width * xRatio, y = rect.height * yRatio;
+    const size = Math.min(rect.width, rect.height) * (0.18 + Math.random()*0.08);
+
+    const svgNS="http://www.w3.org/2000/svg";
+    const svg=document.createElementNS(svgNS,"svg");
+    svg.setAttribute("viewBox",`0 0 ${rect.width} ${rect.height}`);
+    svg.style.position="absolute"; svg.style.inset="0";
+
+    const g=document.createElementNS(svgNS,"g");
+    g.setAttribute("transform",`translate(${x}, ${y})`);
+    g.style.transformOrigin=`${x}px ${y}px`;
+
+    // Tallo
+    const stem=document.createElementNS(svgNS,"path");
+    stem.setAttribute("d",`M 0 0 C -8 40, 8 80, 0 ${size*2}`);
+    stem.setAttribute("stroke","#6fbf73"); stem.setAttribute("stroke-width", Math.max(2,size*0.06));
+    stem.setAttribute("fill","none"); stem.setAttribute("opacity",".95");
+    g.appendChild(stem);
+
+    // Hojas
+    const leaf=(cx,cy,rx,ry,rot,fill)=>{const e=document.createElementNS(svgNS,"ellipse"); e.setAttribute("cx",cx); e.setAttribute("cy",cy); e.setAttribute("rx",rx); e.setAttribute("ry",ry); e.setAttribute("fill",fill); e.setAttribute("transform",`rotate(${rot})`); return e;};
+    g.appendChild(leaf(-size*0.35, size*0.9, size*0.25, size*0.12, -18, "#79c88a"));
+    g.appendChild(leaf( size*0.35, size*1.2, size*0.25, size*0.12,  12, "#6ec081"));
+
+    // Pétalos
+    const petalsGroup=document.createElementNS(svgNS,"g");
+    for(let i=0;i<petals;i++){
+      const angle=(i/petals)*Math.PI*2;
+      const petal=document.createElementNS(svgNS,"path");
+      const long = style==="sun"? size*0.95 : size*1.05;
+      const wide = style==="sun"? size*0.42 : size*0.28;
+      const d = `M 0 0 C ${wide} ${-long*0.35}, ${wide} ${-long*0.75}, 0 ${-long}
+                 C ${-wide} ${-long*0.75}, ${-wide} ${-long*0.35}, 0 0 Z`;
+      petal.setAttribute("d", d);
+      petal.setAttribute("fill", style==="sun" ? "#ffd84d" : "#ffe88a");
+      petal.setAttribute("stroke", style==="sun" ? "#f6c843" : "#f3d86a");
+      petal.setAttribute("stroke-width", 1);
+      petal.setAttribute("transform", `rotate(${(angle*180/Math.PI).toFixed(2)})`);
+      petal.style.cursor="pointer";
+      petal.dataset.msg = sweetMessages[i % sweetMessages.length];
+      petal.addEventListener("click", (ev)=>{
+        ev.stopPropagation();
+        showQuickCard(petal.dataset.msg, x, y - long - 10);
+        spawnPetalParticles(x, y, 10, style);
+      });
+      petalsGroup.appendChild(petal);
+    }
+    g.appendChild(petalsGroup);
+
+    // Centro (cambia estilo)
+    const center=document.createElementNS(svgNS,"circle");
+    center.setAttribute("r", size*0.28);
+    center.setAttribute("fill", style==="sun" ? "#7a4a11" : "#ffe066");
+    center.setAttribute("stroke", style==="sun" ? "#5e360c" : "#f4c43d");
+    center.setAttribute("stroke-width", style==="sun" ? 3 : 2);
+    center.style.cursor="pointer";
+    center.addEventListener("click",(ev)=>{
+      ev.stopPropagation();
+      const newStyle = (center.getAttribute("fill")==="#7a4a11") ? "daisy" : "sun";
+      g.remove(); svg.remove();
+      createFlower({xRatio, yRatio, petals, style:newStyle});
+      spawnPetalParticles(x, y, 18, newStyle);
+    });
+    g.appendChild(center);
+
+    // Animación de entrada
+    g.animate([{transform:`translate(${x}px,${y}px) rotate(-6deg) scale(.9)`},{transform:`translate(${x}px,${y}px) rotate(0) scale(1)`}],{duration:600,easing:"ease-out"});
+
+    svg.appendChild(g); garden.appendChild(svg);
+  }
+
+  // Cartelito lindo dentro del jardín
+  function showQuickCard(text, x, y){
+    const card=document.createElement("div");
+    card.style.position="absolute"; card.style.left=x+"px"; card.style.top=y+"px";
+    card.style.transform="translate(-50%,-100%)";
+    card.style.background="#fff5c2"; card.style.border="1px solid #f7d774"; card.style.borderRadius="12px";
+    card.style.padding="8px 10px"; card.style.boxShadow="0 10px 24px rgba(0,0,0,.12)"; card.style.fontWeight="700"; card.style.zIndex="5";
+    card.textContent=text; garden.appendChild(card);
+    card.animate([{opacity:0, transform:"translate(-50%,-110%)"},{opacity:1, transform:"translate(-50%,-100%)"}],{duration:160,easing:"ease-out"});
+    setTimeout(()=> card.animate([{opacity:1},{opacity:0}],{duration:380,easing:"ease-in"}).onfinish=()=>card.remove(), 1600);
+  }
+
+  // Partículas de pétalos
+  function spawnPetalParticles(x0,y0,n=12,style="sun"){
+    for(let i=0;i<n;i++){
+      const span=document.createElement("span");
+      span.textContent="🌼";
+      span.style.position="absolute"; span.style.left=x0+"px"; span.style.top=y0+"px";
+      span.style.transform="translate(-50%,-50%)"; span.style.pointerEvents="none";
+      garden.appendChild(span);
+      const dx=(Math.random()*160-80), dy=-(30+Math.random()*120), s=.8+Math.random()*.8, r=(Math.random()*40-20);
+      span.animate([{transform:`translate(-50%,-50%) scale(${s}) rotate(0deg)`,opacity:1},{transform:`translate(${dx}px, ${dy}px) scale(${s*1.1}) rotate(${r}deg)`,opacity:0}],{duration:700+Math.random()*600,easing:"ease-out"}).onfinish=()=>span.remove();
+    }
+  }
+  function petalsWind(){
+    const rect=garden.getBoundingClientRect();
+    for(let i=0;i<40;i++){
+      const span=document.createElement("span");
+      span.textContent = Math.random()<0.33 ? "🌼" : (Math.random()<0.5 ? "💛" : "✨");
+      span.style.position="absolute"; span.style.left=(Math.random()*rect.width)+"px"; span.style.top=(-10)+"px"; span.style.pointerEvents="none";
+      garden.appendChild(span);
+      const dx=(Math.random()*300-150), dy=(rect.height+40), dur=1400+Math.random()*1200;
+      span.animate([{transform:`translate(0,0)`,opacity:1},{transform:`translate(${dx}px, ${dy}px)`,opacity:0}],{duration:dur,easing:"cubic-bezier(.2,.7,.2,1)"}).onfinish=()=>span.remove();
+    }
+  }
+  function petalsBurst(){
+    const rect=garden.getBoundingClientRect(); const x0=rect.width/2, y0=rect.height/2;
+    spawnPetalParticles(x0,y0,36,"sun");
+  }
+
+})();
+</script>
+</body>
+</html>
